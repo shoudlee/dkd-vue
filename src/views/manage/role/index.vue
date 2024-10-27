@@ -1,10 +1,22 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="区域名称" prop="regionName">
+      <el-form-item label="角色编码
+" prop="roleCode">
         <el-input
-          v-model="queryParams.regionName"
-          placeholder="请输入区域名称"
+          v-model="queryParams.roleCode"
+          placeholder="请输入角色编码
+"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="角色名称
+" prop="roleName">
+        <el-input
+          v-model="queryParams.roleName"
+          placeholder="请输入角色名称
+"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -22,7 +34,7 @@
           plain
           icon="Plus"
           @click="handleAdd"
-          v-hasPermi="['manage:region:add']"
+          v-hasPermi="['manage:role:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -32,7 +44,7 @@
           icon="Edit"
           :disabled="single"
           @click="handleUpdate"
-          v-hasPermi="['manage:region:edit']"
+          v-hasPermi="['manage:role:edit']"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -42,7 +54,7 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['manage:region:remove']"
+          v-hasPermi="['manage:role:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -51,23 +63,23 @@
           plain
           icon="Download"
           @click="handleExport"
-          v-hasPermi="['manage:region:export']"
+          v-hasPermi="['manage:role:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="regionList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="id" />
-      <el-table-column label="区域名称" align="center" prop="regionName" />
-      <el-table-column label="点位数量" align="center" prop="nodeCount" />
-      <el-table-column label="备注" align="center" prop="remark" />
+      <el-table-column label="${comment}" align="center" prop="roleId" />
+      <el-table-column label="角色编码
+" align="center" prop="roleCode" />
+      <el-table-column label="角色名称
+" align="center" prop="roleName" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" @click="getRegionInfo(scope.row)" v-hasPermi="['manage:node:list']">查看详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:region:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:region:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:role:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:role:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -80,14 +92,18 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改区域管理对话框 -->
+    <!-- 添加或修改工单角色对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="regionRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="区域名称" prop="regionName">
-          <el-input v-model="form.regionName" placeholder="请输入区域名称" />
+      <el-form ref="roleRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="角色编码
+" prop="roleCode">
+          <el-input v-model="form.roleCode" placeholder="请输入角色编码
+" />
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+        <el-form-item label="角色名称
+" prop="roleName">
+          <el-input v-model="form.roleName" placeholder="请输入角色名称
+" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -97,33 +113,15 @@
         </div>
       </template>
     </el-dialog>
-
-    
-    <!-- 查看详情对话框 -->
-    <el-dialog :title="区域详情" v-model="regionInfoOpen" width="500px" append-to-body>
-      <el-form-item label="区域名称">
-          <el-input v-model = "form.regionName" disabled>
-          </el-input>
-      </el-form-item>
-      <label>包含点位：</label>
-      <el-table :data="nodeList">
-        <el-table-column label="序号" type="index" width="50" align="center"/>
-        <el-table-column label="点位名称" align="center" prop="nodeName" />
-        <el-table-column label="设备数量" align="center" prop="vmCount" />
-      </el-table>
-    </el-dialog>
-
   </div>
 </template>
 
-<script setup name="Region">
-import { listRegion, getRegion, delRegion, addRegion, updateRegion } from "@/api/manage/region";
-import { listNode } from "@/api/manage/node";
-import { loadAllParams } from "@/api/page";
+<script setup name="Role">
+import { listRole, getRole, delRole, addRole, updateRole } from "@/api/manage/role";
 
 const { proxy } = getCurrentInstance();
 
-const regionList = ref([]);
+const roleList = ref([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -138,22 +136,20 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    regionName: null,
+    roleCode: null,
+    roleName: null
   },
   rules: {
-    regionName: [
-      { required: true, message: "区域名称不能为空", trigger: "blur" }
-    ],
   }
 });
 
 const { queryParams, form, rules } = toRefs(data);
 
-/** 查询区域管理列表 */
+/** 查询工单角色列表 */
 function getList() {
   loading.value = true;
-  listRegion(queryParams.value).then(response => {
-    regionList.value = response.rows;
+  listRole(queryParams.value).then(response => {
+    roleList.value = response.rows;
     total.value = response.total;
     loading.value = false;
   });
@@ -168,15 +164,11 @@ function cancel() {
 // 表单重置
 function reset() {
   form.value = {
-    id: null,
-    regionName: null,
-    createTime: null,
-    updateTime: null,
-    createBy: null,
-    updateBy: null,
-    remark: null
+    roleId: null,
+    roleCode: null,
+    roleName: null
   };
-  proxy.resetForm("regionRef");
+  proxy.resetForm("roleRef");
 }
 
 /** 搜索按钮操作 */
@@ -193,7 +185,7 @@ function resetQuery() {
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.id);
+  ids.value = selection.map(item => item.roleId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
 }
@@ -202,32 +194,32 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset();
   open.value = true;
-  title.value = "添加区域管理";
+  title.value = "添加工单角色";
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
-  const _id = row.id || ids.value
-  getRegion(_id).then(response => {
+  const _roleId = row.roleId || ids.value
+  getRole(_roleId).then(response => {
     form.value = response.data;
     open.value = true;
-    title.value = "修改区域管理";
+    title.value = "修改工单角色";
   });
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["regionRef"].validate(valid => {
+  proxy.$refs["roleRef"].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
-        updateRegion(form.value).then(response => {
+      if (form.value.roleId != null) {
+        updateRole(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
           getList();
         });
       } else {
-        addRegion(form.value).then(response => {
+        addRole(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功");
           open.value = false;
           getList();
@@ -239,9 +231,9 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _ids = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除区域管理编号为"' + _ids + '"的数据项？').then(function() {
-    return delRegion(_ids);
+  const _roleIds = row.roleId || ids.value;
+  proxy.$modal.confirm('是否确认删除工单角色编号为"' + _roleIds + '"的数据项？').then(function() {
+    return delRole(_roleIds);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
@@ -250,28 +242,10 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('manage/region/export', {
+  proxy.download('manage/role/export', {
     ...queryParams.value
-  }, `region_${new Date().getTime()}.xlsx`)
+  }, `role_${new Date().getTime()}.xlsx`)
 }
 
-/* 查看详情按钮操作 */
-const nodeList = ref([]);
-const regionInfoOpen = ref(false);
-function getRegionInfo(row) {
-    // 查询区域信息
-    reset();
-    const _id = row.id
-    getRegion(_id).then(response => {
-        form.value = response.data;
-        regionInfoOpen.value = true;
-    });
-    // 查询点位列表
-    loadAllParams.regionId = row.id;
-    listNode(loadAllParams).then(response => {
-        nodeList.value = response.rows;
-    });
-
-  }
 getList();
 </script>
